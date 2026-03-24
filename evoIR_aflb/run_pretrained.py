@@ -276,7 +276,7 @@ class AdaIR(nn.Module):
         self.encoder_level3_fft = nn.Sequential(*[FFTransformerBlock(dim*4) for _ in range(num_fft_blocks[2])])
         self.down3_4 = Downsample(dim*4)
         self.latent = nn.Sequential(*[TransformerBlock(dim*8,heads[3],ffn_expansion_factor,bias,LayerNorm_type) for _ in range(num_blocks[3])])
-        self.latent_fft = nn.Sequential(*[FFTransformerBlock(dim*8) for _ in range(num_fft_blocks[1])])
+        self.latent_fft = nn.Sequential(*[FFTransformerBlock(dim*8) for _ in range(num_fft_blocks[3])])
         self.up4_3 = Upsample(dim*8); self.reduce_chan_level3 = nn.Conv2d(dim*8,dim*4,1,bias=bias)
         self.decoder_level3 = nn.Sequential(*[TransformerBlock(dim*4,heads[2],ffn_expansion_factor,bias,LayerNorm_type) for _ in range(num_blocks[2])])
         self.decoder_level3_fft = nn.Sequential(*[FFTransformerBlock(dim*4,decoder_flag=True) for _ in range(num_fft_blocks[2])])
@@ -362,7 +362,7 @@ def pad_to_multiple(img, multiple=16):
         img = F.pad(img, (0, pad_w, 0, pad_h), mode='reflect')
     return img, h, w
 
-input_path = os.path.join(os.path.dirname(__file__), 'input_horse.png')
+input_path = os.path.join(os.path.dirname(__file__), 'bacha.png')
 output_path = os.path.join(os.path.dirname(__file__), 'output_pretrained.png')
 
 img = Image.open(input_path).convert('RGB')
