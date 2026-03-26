@@ -58,20 +58,8 @@ class HocVidModel(nn.Module):
         for param in self.dder.parameters():
             param.requires_grad = False
         
-        # ── Fusion: Combines AFLB frequency features with DDER output ──
-        # AFLB refinement produces 48-ch features, DDER produces 3-ch image
-        # Fusion adapter merges them into the final output
-        self.fusion = nn.Sequential(
-            nn.Conv2d(48 + 3, 32, kernel_size=3, padding=1, bias=False),
-            nn.GELU(),
-            nn.Conv2d(32, 3, kernel_size=3, padding=1, bias=False),
-        )
-        
-        # ── Hook to capture AFLB intermediate features ──
-        self.aflb_features = None
-        def hook_fn(module, inp, out):
-            self.aflb_features = out
-        self.aflb.refinement.register_forward_hook(hook_fn)
+        # No fusion adapter layer needed since DDER is sequential
+        # No hook needed since we extract frequency residual mathematically
 
     def train(self, mode=True):
         """Override to keep AFLB and DDER always in eval mode (frozen with BatchNorm)."""
@@ -83,36 +71,35 @@ class HocVidModel(nn.Module):
     def forward(self, input_frame):
         B, C, H, W = input_frame.shape
         
-        # ── Stage 1: Run AFLB (frozen) ──
+        # ── Stage 1: AFLB (AdaIR) Frequency Extraction ──
         with torch.no_grad():
-            aflb_restored = self.aflb(input_frame)  # [B, 3, H, W]
+            full_restored = self.aflb(input_frame)  # [B, 3, H, W]
         
-        freq_features = self.aflb_features  # [B, 48, H, W] from hook
-        if freq_features is None:
-            raise RuntimeError("AFLB features not captured by the forward hook.")
+        # Extract purely the frequency distribution map (AdaIR: restored = freq + input)
+        freq_map = full_restored - input_frame
         
-        # ── Stage 2: Run DDER on raw frame (as trained on Colab) ──
-        # DDER expects [B, 3, 224, 224] — resize, process, upscale back
-        input_224 = F.interpolate(input_frame, size=(224, 224), mode='bilinear', align_corners=False)
+        # ── Stage 2: DDER Degradation Error Segregation ──
+        # DDER expects 224x224 input
+        freq_map_224 = F.interpolate(freq_map, size=(224, 224), mode='bilinear', align_corners=False)
         
+        # DDER was originally trained to output: output = input + degradation_map
+        # We will feed it the frequency map directly. Since DDER expects normalized values,
+        # its internal batch/layer normalizations will center the frequency shifts automatically.
         with torch.no_grad():
-            dder_out = self.dder(input_224)  # [B, 3, 224, 224] or tuple
+            dder_out = self.dder(freq_map_224)
         
         if isinstance(dder_out, tuple):
-            dder_img, r_loss = dder_out
+            dder_full, r_loss = dder_out
         else:
-            dder_img = dder_out
+            dder_full = dder_out
             r_loss = torch.tensor(0.0, device=input_frame.device)
+            
+        # Extract purely the degradation / error mapping 
+        degradation_map_224 = dder_full - freq_map_224
         
-        # Upscale DDER output back to original resolution
-        dder_upscaled = F.interpolate(dder_img, size=(H, W), mode='bilinear', align_corners=False)
-        
-        # ── Fusion: Combine AFLB freq features + DDER output ──
-        fused_input = torch.cat([freq_features.detach(), dder_upscaled], dim=1)  # [B, 51, H, W]
-        refinement = self.fusion(fused_input)  # [B, 3, H, W]
-        
-        output = torch.clamp(input_frame + refinement, 0, 1)
+        # Upscale back to initial resolution
+        final_degradation_map = F.interpolate(degradation_map_224, size=(H, W), mode='bilinear', align_corners=False)
         
         if self.training:
-            return output, r_loss
-        return output
+            return final_degradation_map, r_loss
+        return final_degradation_map

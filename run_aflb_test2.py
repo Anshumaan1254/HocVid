@@ -48,16 +48,22 @@ print(f"Input: {orig_w}x{orig_h}")
 img_tensor = TF.to_tensor(img).unsqueeze(0).to(device)
 img_padded, h_orig, w_orig = pad_to_multiple(img_tensor, 16)
 
-print("Stage 1: Running AFLB...")
+print("Stage 1: Running AFLB and extracting Frequency Map...")
 with torch.no_grad():
     aflb_restored = model.aflb(img_padded)
+    freq_map = aflb_restored - img_padded
 
-aflb_out = aflb_restored[:, :, :h_orig, :w_orig].clamp(0, 1)
+# Normalize the frequency map for visualization (min-max normalization)
+freq_map_min = freq_map.min()
+freq_map_max = freq_map.max()
+freq_map_vis = (freq_map - freq_map_min) / (freq_map_max - freq_map_min + 1e-8)
+
+aflb_out = freq_map_vis[:, :, :h_orig, :w_orig].clamp(0, 1)
 aflb_pil = TF.to_pil_image(aflb_out.squeeze(0).cpu())
 if aflb_pil.size != (orig_w, orig_h):
     aflb_pil = aflb_pil.resize((orig_w, orig_h), Image.LANCZOS)
 
-output_path = os.path.join(os.path.dirname(__file__), 'aflb_only_horse1.png')
+output_path = os.path.join(os.path.dirname(__file__), 'aflb_freq_map_horse1.png')
 aflb_pil.save(output_path, quality=95)
 print(f"  -> {output_path}")
 
@@ -65,5 +71,5 @@ print(f"  -> {output_path}")
 import shutil
 artifact_dir = r"c:\Users\Anshu\.gemini\antigravity\brain\8fdb473a-9318-45ae-91fb-be10b75a35b6"
 if os.path.exists(artifact_dir):
-    shutil.copy(output_path, os.path.join(artifact_dir, 'aflb_only_horse1.png'))
+    shutil.copy(output_path, os.path.join(artifact_dir, 'aflb_freq_map_horse1.png'))
 
