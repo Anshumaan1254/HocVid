@@ -1,0 +1,31 @@
+Traceback (most recent call last):
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\run_infer_wrap.py", line 6, in <module>
+    run_inference_bacha.main()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\run_inference_bacha.py", line 57, in main
+    dder_features = model(img_padded)
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\model.py", line 39, in forward
+    dder_features = self.dder(input_frame, freq_features)
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\dder.py", line 81, in forward
+    degradation_embedding = self.daclip.encode_image(raw_frame)
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\daclip\open_clip\model.py", line 234, in encode_image
+    features = self.visual(image)
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\daclip\open_clip\transformer.py", line 526, in forward
+    x = x + self.positional_embedding.to(x.dtype)
+        ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+RuntimeError: The size of tensor a (1407) must match the size of tensor b (50) at non-singleton dimension 1

@@ -1,0 +1,59 @@
+import torch.optim as optim
+import os
+
+try:
+    num_epochs = 50
+    start_epoch = 0
+    ckpt_path = "/content/checkpoints/dder/"
+
+    # Resume Support logic
+    if os.path.exists(ckpt_path):
+        ckpts = sorted([f for f in os.listdir(ckpt_path) if f.endswith(".pt")])
+        if ckpts:
+            latest_path = os.path.join(ckpt_path, ckpts[-1])
+            latest = torch.load(latest_path)
+            model.load_state_dict(latest["model_state_dict"])
+            optimizer.load_state_dict(latest["optimizer_state_dict"])
+            start_epoch = latest["epoch"] + 1
+            print(f"Resuming training from epoch {start_epoch}")
+
+    for epoch in range(start_epoch, num_epochs):
+        model.train()
+        # Note: Ensure train_loader is defined in Cell 577cf3c0 before running
+        for batch_idx, (degraded, clean, _) in enumerate(train_loader):
+            degraded, clean = degraded.to(device), clean.to(device)
+
+            optimizer.zero_grad()
+            # Mixed Precision Training (FP16)
+            with torch.amp.autocast('cuda'):
+                output = model(degraded)
+                loss = F.l1_loss(output, clean)
+
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            # Gradient Clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            scaler.step(optimizer)
+            scaler.update()
+
+            if batch_idx % 10 == 0:
+                print(f"Epoch[{epoch}/{num_epochs}] Batch[{batch_idx}] Loss: {loss.item():.4f} GPU: {torch.cuda.memory_allocated()/1e9:.2f}GB")
+
+        scheduler.step()
+
+        # Save Checkpoint after every epoch
+        ckpt = {
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict()
+        }
+        save_name = f"{ckpt_path}epoch_{epoch:03d}.pt"
+        torch.save(ckpt, save_name)
+
+        # Backup to Google Drive every 5 epochs
+        if (epoch + 1) % 5 == 0:
+            !cp {save_name} /content/drive/MyDrive/HOCVid/
+            print(f"Epoch {epoch} backed up to Drive.")
+
+except Exception as e:
+    print(f"Training error: {e}")

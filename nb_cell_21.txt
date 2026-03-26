@@ -1,0 +1,61 @@
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+from PIL import Image
+import os
+import glob
+import torch
+
+class AllWeatherDataset(Dataset):
+    def __init__(self, root_dir, split='train', size=128):
+        self.root_dir = root_dir
+        self.split = split
+        self.transform = T.Compose([
+            T.RandomCrop(size),
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711])
+        ])
+
+        self.data_info = []
+        categories = {'snow': 0, 'raindrop': 1, 'rainHaze': 2}
+
+        for cat, label in categories.items():
+            input_dir = os.path.join(root_dir, split, cat, 'input')
+            gt_dir = os.path.join(root_dir, split, cat, 'gt')
+
+            if os.path.exists(input_dir):
+                files = sorted(os.listdir(input_dir))
+                for f in files:
+                    self.data_info.append({
+                        'input': os.path.join(input_dir, f),
+                        'gt': os.path.join(gt_dir, f),
+                        'label': label
+                    })
+
+    def __len__(self):
+        return len(self.data_info)
+
+    def __getitem__(self, idx):
+        info = self.data_info[idx]
+        input_img = Image.open(info['input']).convert('RGB')
+        gt_img = Image.open(info['gt']).convert('RGB')
+
+        # Apply same random crop to both
+        state = torch.get_rng_state()
+        input_tensor = self.transform(input_img)
+        torch.set_rng_state(state)
+        gt_tensor = self.transform(gt_img)
+
+        return input_tensor, gt_tensor, info['label']
+
+try:
+    train_dataset = AllWeatherDataset('/content/allweather/')
+    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=2, pin_memory=True)
+
+    # Validation loader logic
+    # val_dataset = AllWeatherDataset('/content/allweather/', split='test')
+    # val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False)
+
+    print(f"Dataset loaded. Train samples: {len(train_dataset)}")
+except Exception as e:
+    print(f"Dataset error: {e}")

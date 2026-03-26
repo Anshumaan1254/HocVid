@@ -1,0 +1,70 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from MOE_CLIPbias import model as MOE_Router
+
+class DDERModule(nn.Module):
+    def __init__(self, daclip_path, num_experts=3):
+        super(DDERModule, self).__init__()
+        try:
+            # 1. Initialize MoE from MOE_CLIPbias.py
+            # CLIP ViT-B/32 embedding size is 512
+            self.moe_router = MOE_Router(
+                input_size=512,
+                output_size=512,
+                mlp_ratio=4,
+                num_experts=num_experts,
+                num_degradations=3 # snow, raindrop, rainHaze
+            )
+
+            # 2. DA-CLIP Logic (Placeholder for architecture wrapper)
+            # In standalone training, we simulate the frozen extraction or wrap the loaded weights
+            self.register_buffer("clip_mean", torch.tensor([0.48145466, 0.4578275, 0.40821073]).view(1,3,1,1))
+            self.register_buffer("clip_std", torch.tensor([0.26862954, 0.26130258, 0.27577711]).view(1,3,1,1))
+
+            # Ensure gradients are only for MoE
+            for param in self.parameters():
+                param.requires_grad = True # Default for MoE
+
+            print(f"DDER Module Initialized.")
+            trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
+            frozen = sum(p.numel() for p in self.parameters() if not p.requires_grad)
+            print(f"Trainable Params: {trainable:,} | Frozen Params: {frozen:,}")
+        except Exception as e:
+            print(f"DDER Init Error: {e}")
+
+    def forward(self, x):
+        # x: [B, 3, 128, 128]
+        # 1. Preprocess for DA-CLIP (Resize to 224 and Normalize)
+        x_clip = F.interpolate(x, size=(224, 224), mode='bicubic', align_corners=False)
+        x_clip = (x_clip - self.clip_mean) / self.clip_std
+
+        # 2. Get degradation embedding (Simulated as identity for structure)
+        # In real: deg_emb = daclip_encoder(x_clip)
+        deg_emb = torch.randn(x.size(0), 512).to(x.device)
+
+        # 3. MoE Refinement
+        # Based on MOE_CLIPbias, it expects (x, de_cls, train)
+        # We treat deg_emb as both feature and class context for the router
+        dummy_de_cls = torch.zeros(x.size(0), 3).to(x.device) # One-hot context
+        refined_features = self.moe_router(deg_emb, dummy_de_cls, self.training)
+
+        # 4. Residual Connection
+        # Map refined features back to image space (simplified refinement)
+        # Note: Standalone DDER typically refines the latent or uses a small decoder
+        # Here we follow the rule: output = input + refinement
+        refinement = refined_features.view(x.size(0), 512, 1, 1).expand(-1, -1, x.size(2), x.size(3))
+        # Simple projection to 3 channels for residual
+        output = x + refinement[:, :3, :, :]
+
+        return torch.clamp(output, 0, 1)
+
+try:
+    model = DDERModule('/content/daclip/daclip_ViT-B-32.pt').cuda()
+    dummy_x = torch.randn(1, 3, 128, 128).cuda()
+    with torch.cuda.amp.autocast():
+        dummy_out = model(dummy_x)
+    print("Dummy Forward Success. Output shape:", dummy_out.shape)
+    print(f"GPU memory: {torch.cuda.memory_allocated()/1e9:.2f}GB / {torch.cuda.get_device_properties(0).total_memory/1e9:.2f}GB")
+except Exception as e:
+    print(f"Forward Error: {e}")

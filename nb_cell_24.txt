@@ -1,0 +1,8 @@
+import pickle
+try:
+    ckpt = torch.load('/content/checkpoints/dder/best_model.pt')
+    with open('/content/dder_final.pkl', 'wb') as f:
+        pickle.dump(ckpt['model_state_dict'], f)
+    print("Exported to PKL.")
+except Exception as e:
+    print(f"Export error: {e}")

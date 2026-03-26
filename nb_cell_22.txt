@@ -1,0 +1,17 @@
+try:
+    from torch.optim import AdamW
+    from torch.optim.lr_scheduler import CosineAnnealingLR
+
+    device = torch.device('cuda')
+    # Instantiate the model with the fixed weight loading logic
+    model = DDERModule('/content/daclip/daclip_ViT-B-32.pt').to(device)
+
+    optimizer = AdamW([p for p in model.parameters() if p.requires_grad], lr=2e-4, weight_decay=1e-4)
+    scheduler = CosineAnnealingLR(optimizer, T_max=50)
+    # Updated to modern API to resolve FutureWarning
+    scaler = torch.amp.GradScaler('cuda')
+
+    os.makedirs('/content/checkpoints/dder/', exist_ok=True)
+    print("Ready for training. Model and Optimizer initialized.")
+except Exception as e:
+    print(f"Setup error: {e}")

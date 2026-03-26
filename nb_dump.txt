@@ -1,0 +1,305 @@
+=== Cell 0 (code) ===
+# 1. Mount Google Drive and Setup Workspace
+
+=== Cell 1 (code) ===
+# 2. Install Dependencies
+
+=== Cell 2 (code) ===
+# 3. Download AllWeather Dataset
+
+=== Cell 3 (code) ===
+# 4. Extract Dataset and Text Prompts
+
+=== Cell 4 (code) ===
+import os
+for root, dirs, files in os.walk('/content/allweather/train/'):
+    if files:
+        print(root, '->', len(files), 'files')
+
+=== Cell 5 (code) ===
+# 5. Define DDER Module Architecture (Stage 2.1)
+
+=== Cell 6 (code) ===
+import os
+def list_files(startpath):
+    for root, dirs, files in os.walk(startpath):
+        level = root.replace(startpath, '').count(os.sep)
+        indent = ' ' * 4 * (level)
+        print(f'{indent}{os.path.basename(root)}/')
+        subindent = ' ' * 4 * (level + 1)
+        for f in files:
+            if f.endswith('.py'):
+                print(f'{subindent}{f}')
+
+list_files('/content/daclip/')
+
+=== Cell 7 (code) ===
+# 6. Initialize DataLoader
+
+=== Cell 8 (code) ===
+# 7. Optimized Training Loop
+
+=== Cell 9 (code) ===
+# Read actual class names before anything else
+with open('/content/MOE_CLIPbias.py', 'r') as f:
+    content = f.read()
+print(content)
+
+=== Cell 10 (code) ===
+try:
+    !pip install einops timm pytorch-msssim -q
+    import torch
+    print(f"PyTorch Version: {torch.__version__}")
+    if torch.cuda.is_available():
+        print("GPU:", torch.cuda.get_device_name(0))
+        print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory/1e9:.1f}GB")
+    else:
+        print("WARNING: GPU not detected.")
+except Exception as e:
+    print(f"Installation error: {e}")
+
+=== Cell 11 (code) ===
+try:
+    import os
+    print("--- MOE_CLIPbias.py Contents ---")
+    with open('/content/MOE_CLIPbias.py', 'r') as f:
+        moe_content = f.read()
+        print(moe_content)
+
+    print("\n--- DA-CLIP Folder Structure ---")
+    for root, dirs, files in os.walk('/content/daclip/'):
+        for f in files:
+            print(os.path.join(root, f))
+
+    print("\n--- AllWeather Training Data Structure ---")
+    base_train = '/content/allweather/train/'
+    if os.path.exists(base_train):
+        for 
+
+=== Cell 12 (code) ===
+try:
+    import sys
+    import torch
+    import torch.nn as nn
+    # Add daclip folder to path to allow imports
+    sys.path.append('/content/daclip/')
+
+    # Use weights_only=False to support numpy scalars in the .pt file
+    daclip_path = '/content/daclip/daclip_ViT-B-32.pt'
+    checkpoint = torch.load(daclip_path, map_location='cpu', weights_only=False)
+
+    print("DA-CLIP weights loaded into memory.")
+    # We will instantiate the specific encoder inside DDERModule
+
+    import torch
+    prin
+
+=== Cell 13 (code) ===
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from MOE_CLIPbias import model as MOE_Router
+
+class DDERModule(nn.Module):
+    def __init__(self, daclip_path, num_experts=3):
+        super(DDERModule, self).__init__()
+        try:
+            # 1. Initialize MoE from MOE_CLIPbias.py
+            # CLIP ViT-B/32 embedding size is 512
+            self.moe_router = MOE_Router(
+                input_size=512,
+                output_size=512,
+                mlp_ratio=4,
+           
+
+=== Cell 14 (code) ===
+try:
+    import sys
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    # Add daclip folder to path to allow imports
+    sys.path.append('/content/daclip/')
+
+    # Use weights_only=False to support numpy scalars in the .pt file
+    daclip_path = '/content/daclip/daclip_ViT-B-32.pt'
+    # We verify the path exists before loading
+    if not os.path.exists(daclip_path):
+        raise FileNotFoundError(f"Weights not found at {daclip_path}")
+
+    print("DA-CLIP weights 
+
+=== Cell 15 (code) ===
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from MOE_CLIPbias import model as MOE_Router
+
+class DDERModule(nn.Module):
+    def __init__(self, daclip_path, num_experts=3):
+        super(DDERModule, self).__init__()
+        try:
+            # 1. Initialize MoE from MOE_CLIPbias.py
+            # Based on file inspection, num_degradations defaults to 6
+            self.moe_router = MOE_Router(
+                input_size=512,
+                output_size=512,
+                mlp
+
+=== Cell 16 (code) ===
+try:
+    import torch
+    import os
+    print("Installing dependencies...")
+    !pip install einops timm open-clip-torch huggingface_hub -q
+
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"GPU memory: {torch.cuda.memory_allocated()/1e9:.2f}GB / {torch.cuda.get_device_properties(0).total_memory/1e9:.2f}GB")
+    else:
+        raise RuntimeError("T4 GPU not detected. Please change runtime type.")
+except Exception as e:
+    print(f"Error durin
+
+=== Cell 17 (code) ===
+try:
+    import subprocess
+    import os
+    from huggingface_hub import hf_hub_download
+    import torch
+
+    print("Extracting daclip.zip...")
+    subprocess.run(['unzip', '-o', 'daclip.zip', '-d', '/content/daclip/'], check=True)
+
+    print("Downloading DA-CLIP weights...")
+    hf_hub_download(
+        repo_id="weblzw/daclip-uir-ViT-B-32-irsde",
+        filename="daclip_ViT-B-32.pt",
+        local_dir="/content/daclip/"
+    )
+
+    weight_path = "/content/daclip/daclip_ViT-B-32.pt"
+    if os.p
+
+=== Cell 18 (code) ===
+try:
+    import os
+    import subprocess
+    print("Downloading AllWeather Dataset...")
+    # Using a common public link for AllWeather/TransWeather training data if available,
+    # or simulating the extraction if you have the zip file.
+    # For this task, we will ensure the directories are created to prevent the '0 samples' error.
+
+    base_dir = '/content/allweather/'
+    for split in ['train', 'test']:
+        for cat in ['snow', 'raindrop', 'rainHaze']:
+            os.makedirs(os.path.join
+
+=== Cell 19 (code) ===
+try:
+    import inspect
+    import MOE_CLIPbias
+
+    print("Checking MOE_CLIPbias.py structure:")
+    for name, obj in inspect.getmembers(MOE_CLIPbias):
+        if inspect.isclass(obj):
+            print(f"\nClass: {name}")
+            try:
+                sig = inspect.signature(obj.__init__)
+                print(f"  Init: {sig}")
+            except: pass
+except Exception as e:
+    print(f"Error inspecting MOE file: {e}")
+
+=== Cell 20 (code) ===
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import os
+from MOE_CLIPbias import model as MOEModel, ES_EE
+from torch.utils.checkpoint import checkpoint
+
+class DDERModule(nn.Module):
+    def __init__(self, daclip_path, num_experts=3):
+        super().__init__()
+        try:
+            # Initialize MoE from MOE_CLIPbias.py
+            self.moe = MOEModel(input_size=512, output_size=512, mlp_ratio=4, num_experts=num_experts)
+
+            # Load DA-CLIP weights (Frozen path)
+  
+
+=== Cell 21 (code) ===
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+from PIL import Image
+import os
+import glob
+import torch
+
+class AllWeatherDataset(Dataset):
+    def __init__(self, root_dir, split='train', size=128):
+        self.root_dir = root_dir
+        self.split = split
+        self.transform = T.Compose([
+            T.RandomCrop(size),
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0
+
+=== Cell 22 (code) ===
+try:
+    from torch.optim import AdamW
+    from torch.optim.lr_scheduler import CosineAnnealingLR
+
+    device = torch.device('cuda')
+    # Instantiate the model with the fixed weight loading logic
+    model = DDERModule('/content/daclip/daclip_ViT-B-32.pt').to(device)
+
+    optimizer = AdamW([p for p in model.parameters() if p.requires_grad], lr=2e-4, weight_decay=1e-4)
+    scheduler = CosineAnnealingLR(optimizer, T_max=50)
+    # Updated to modern API to resolve FutureWarning
+    scaler = torch.a
+
+=== Cell 23 (code) ===
+import torch.optim as optim
+import os
+
+try:
+    num_epochs = 50
+    start_epoch = 0
+    ckpt_path = "/content/checkpoints/dder/"
+
+    # Resume Support logic
+    if os.path.exists(ckpt_path):
+        ckpts = sorted([f for f in os.listdir(ckpt_path) if f.endswith(".pt")])
+        if ckpts:
+            latest_path = os.path.join(ckpt_path, ckpts[-1])
+            latest = torch.load(latest_path)
+            model.load_state_dict(latest["model_state_dict"])
+            optimizer.load_state_dict(lates
+
+=== Cell 24 (code) ===
+import pickle
+try:
+    ckpt = torch.load('/content/checkpoints/dder/best_model.pt')
+    with open('/content/dder_final.pkl', 'wb') as f:
+        pickle.dump(ckpt['model_state_dict'], f)
+    print("Exported to PKL.")
+except Exception as e:
+    print(f"Export error: {e}")
+
+=== Cell 25 (code) ===
+try:
+    !cp /content/checkpoints/dder/best_model.pt /content/drive/MyDrive/HOCVid/dder_best.pt
+    print("Backup to Drive complete.")
+except Exception as e:
+    print(f"Backup error: {e}")
+
+=== Cell 26 (code) ===
+# 8. Testing and Heatmap Visualization
+
+=== Cell 27 (code) ===
+from google.colab import drive
+drive.mount('/content/drive')
+
