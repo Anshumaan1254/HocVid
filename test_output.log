@@ -1,0 +1,104 @@
+﻿============================================================
+HoCVid Pipeline Shape Verification Tests
+============================================================
+
+============================================================
+TEST 1: AFLBFixed ΓÇö Bug 1 (.real) + Bug 2 (mask)
+============================================================
+  Input:          torch.Size([2, 3, 128, 128])
+  Output:         torch.Size([2, 48, 128, 128])
+  Γ£ô Normal image shape correct
+  Small input:    (2, 3, 64, 64)
+  Small output:   torch.Size([2, 48, 64, 64])
+  Γ£ô Small image (Bug 2 fix) verified
+  High-freq mean: 0.000000 (should be Γëê0 with .real fix)
+  Γ£ô No positive bias (Bug 1 fix) verified
+  Parameters: 36,167 (0.04M)
+  Γ£ô TEST 1 PASSED
+
+============================================================
+TEST 2: DDERFixedModule ΓÇö Bug 3 (vit_proj) + Bug 4 (forward_features)
+============================================================
+  Input:                (1, 3, 128, 128)
+  forward_features():   torch.Size([1, 512, 4, 4])
+  r_loss:               0.539000
+  Γ£ô forward_features returns (B, 512, h_p, w_p)
+  Γ£ô vit_proj = Conv2d(768ΓåÆ512) exists
+  Γ£ô forward() still returns (B, 3, H, W) pixels
+  Total params:   94,561,561 (94.56M)
+  vit_proj params: 393,216 (0.39M)
+  Γ£ô TEST 2 PASSED
+
+============================================================
+TEST 3: CrossFrequencyGate
+============================================================
+  AFLB input:  torch.Size([2, 48, 32, 32])
+  DDER input:  torch.Size([2, 512, 32, 32])
+  Output:      torch.Size([2, 512, 32, 32])
+  Parameters:  319,586 (0.32M)
+  Γ£ô TEST 3 PASSED
+
+============================================================
+TEST 4: SPMAdapter ΓÇö Zero-init verification
+============================================================
+  SAM input:   torch.Size([2, 1, 32, 32])
+  MiDaS input: torch.Size([2, 1, 32, 32])
+  Output:      torch.Size([2, 512, 32, 32])
+  Max |output|: 0.0000000000 (should be 0.0)
+  Γ£ô Zero-init verified (ControlNet trick working)
+  Parameters:  627,584 (0.63M)
+  Γ£ô TEST 4 PASSED
+
+============================================================
+TEST 5: HocVidFusionPipeline ΓÇö Full Integration
+============================================================
+  AFLB features:    torch.Size([2, 48, 64, 64])
+  DDER features:    torch.Size([2, 512, 4, 4])
+  SAM boundary:     torch.Size([2, 1, 128, 128])
+  MiDaS depth:      torch.Size([2, 1, 96, 96])
+  Target:           (2, 512, 64, 64)
+  Output:           torch.Size([2, 512, 64, 64])
+  Γ£ô Output shape matches MCDB input requirement
+  Γ£ô TEST 5 PASSED
+
+============================================================
+TEST 6: HocVidModel ΓÇö Complete End-to-End
+============================================================
+  Device: cuda
+[HocVid] Initializing AFLB (fixed)...
+[HocVid] Initializing DDER (fixed)...
+[HocVid] Loading DDER weights from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  DDER weights loaded: 174 matched, 1 missing (expected: vit_proj), 0 unexpected
+[HocVid] Initializing Fusion Pipeline...
+
+[HocVid] Parameter Summary:
+  Total:       95,544,898 (95.54M)
+  Trainable:    7,695,682 (7.70M)
+  Frozen:      87,849,216 (87.85M)
+        AFLB:     36,167 trainable,          0 frozen
+        DDER:  6,712,345 trainable, 87,849,216 frozen
+      Fusion:    947,170 trainable,          0 frozen
+  Raw input:        (1, 3, 128, 128)
+  MCDB input:       torch.Size([1, 512, 128, 128])
+  r_loss:           2.851503
+  Γ£ô End-to-end shape correct: (B, 512, H, W)
+
+  Gradient flow test...
+  Trainable params with gradient:    29
+  Trainable params without gradient:  33
+  Frozen params with gradient:       0 (should be 0)
+  Γ£ô Gradient flow verified
+  Γ£ô Graceful degradation without SAM/MiDaS
+  Γ£ô TEST 6 PASSED
+
+============================================================
+TEST SUMMARY
+============================================================
+  AFLB Fixed.............................. Γ£ô PASSED
+  DDER Fixed.............................. Γ£ô PASSED
+  CrossFrequencyGate...................... Γ£ô PASSED
+  SPMAdapter.............................. Γ£ô PASSED
+  FusionPipeline.......................... Γ£ô PASSED
+  Full Model.............................. Γ£ô PASSED
+
+Γ£à ALL TESTS PASSED ΓÇö Pipeline produces (B, 512, H, W) with no NaNs!
