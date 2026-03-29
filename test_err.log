@@ -1,0 +1,245 @@
+﻿python : C:\Users\Anshu\Ap
+pData\Local\Python\pythonc
+ore-3.14-64\Lib\site-packa
+ges\timm\models\layers\__i
+nit__.py:49: 
+FutureWarning: Importing 
+from timm.models.layers 
+is deprecated, please 
+import via timm.layers
+At line:1 char:1
++ python test_complete.py 
+-v > test_out.log 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (C  
+  :\Users\Anshu\...via    
+ timm.layers:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  
+warnings.warn(f"Importing 
+from {__name__} is 
+deprecated, please import 
+via timm.layers", 
+FutureWarning)
+test_01_forward_shape_128 
+(__main__.TestHocVidComple
+te.test_01_forward_shape_1
+28)
+Test 1: Forward pass 
+shape ù (1, 3, 128, 128) 
+\u2192 (1, 3, 128, 128) 
+... ok
+test_02_forward_shape_256 
+(__main__.TestHocVidComple
+te.test_02_forward_shape_2
+56)
+Test 2: Forward pass 
+shape ù (2, 3, 256, 256) 
+\u2192 (2, 3, 256, 256) 
+... ok
+test_03_no_nan_or_inf (__m
+ain__.TestHocVidComplete.t
+est_03_no_nan_or_inf)
+Test 3: No NaN/Inf in 
+output ... ok
+test_04_output_clamp_range
+ (__main__.TestHocVidCompl
+ete.test_04_output_clamp_r
+ange)
+Test 4: Output range ù 
+values in [0, 1] after 
+clamp ... ok
+test_05_gradient_flow_to_d
+ecoder (__main__.TestHocVi
+dComplete.test_05_gradient
+_flow_to_decoder)
+Test 5: Gradient flow ù 
+gradients reach decoder 
+params ... ok
+test_06_gradient_isolation
+ (__main__.TestHocVidCompl
+ete.test_06_gradient_isola
+tion)
+Test 6: Gradient 
+isolation ù no gradients 
+to frozen backbone params 
+... ERROR
+test_07_global_residual_ze
+ro_init (__main__.TestHocV
+idComplete.test_07_global_
+residual_zero_init)
+Test 7: Global residual ù 
+when decoder weights are 
+zero-init, output \u2248 
+input ... ok
+test_08_parameter_count (_
+_main__.TestHocVidComplete
+.test_08_parameter_count)
+Test 8: Parameter count ù 
+decoder head params match 
+expected M2Restore subset 
+... FAIL
+test_09_return_losses_mode
+ (__main__.TestHocVidCompl
+ete.test_09_return_losses_
+mode)
+Test 9: return_losses 
+mode ù losses_dict 
+contains expected keys 
+... ok
+test_10_get_trainable_para
+ms (__main__.TestHocVidCom
+plete.test_10_get_trainabl
+e_params)
+Test 10: 
+get_trainable_params() ù 
+returns correct subset 
+... ok
+test_11_batch_size_1_infer
+ence (__main__.TestHocVidC
+omplete.test_11_batch_size
+_1_inference)
+Test 11: Inference mode ù 
+works with batch_size=1 
+without BatchNorm crashes 
+... ok
+test_12_amp_compatibility 
+(__main__.TestHocVidComple
+te.test_12_amp_compatibili
+ty)
+Test 12: AMP 
+compatibility ù forward 
+pass works inside 
+autocast ... C:\Users\Ansh
+u\OneDrive\Desktop\HoCVid\
+test_complete.py:171: 
+FutureWarning: `torch.cuda
+.amp.autocast(args...)` 
+is deprecated. Please use 
+`torch.amp.autocast('cuda'
+, args...)` instead.
+  with autocast():
+C:\Users\Anshu\OneDrive\De
+sktop\HoCVid\aflb_fixed.py
+:237: UserWarning: 
+ComplexHalf support is 
+experimental and many 
+operators don't support 
+it yet. (Triggered 
+internally at C:\actions-r
+unner\_work\pytorch\pytorc
+h\pytorch\aten\src\ATen\Em
+ptyTensor.cpp:55.)
+  fft = torch.fft.fft2(x, 
+norm='ortho', dim=(-2, 
+-1))
+ok
+
+==========================
+==========================
+==================
+ERROR: test_06_gradient_is
+olation (__main__.TestHocV
+idComplete.test_06_gradien
+t_isolation)
+Test 6: Gradient 
+isolation ù no gradients 
+to frozen backbone params
+--------------------------
+--------------------------
+------------------
+Traceback (most recent 
+call last):
+  File "C:\Users\Anshu\One
+Drive\Desktop\HoCVid\test_
+complete.py", line 100, 
+in 
+test_06_gradient_isolation
+    aflb_encoder_frozen = 
+all(not p.requires_grad 
+for p in self.model.upstre
+am_model.aflb.encoder.para
+meters())
+                          
+                          
+       ^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Anshu\App
+Data\Local\Python\pythonco
+re-3.14-64\Lib\site-packag
+es\torch\nn\modules\module
+.py", line 1968, in 
+__getattr__
+    raise AttributeError(
+        
+f"'{type(self).__name__}' 
+object has no attribute 
+'{name}'"
+    )
+AttributeError: 
+'AFLBFixed' object has no 
+attribute 'encoder'
+
+==========================
+==========================
+==================
+FAIL: 
+test_08_parameter_count (_
+_main__.TestHocVidComplete
+.test_08_parameter_count)
+Test 8: Parameter count ù 
+decoder head params match 
+expected M2Restore subset
+--------------------------
+--------------------------
+------------------
+Traceback (most recent 
+call last):
+  File "C:\Users\Anshu\One
+Drive\Desktop\HoCVid\test_
+complete.py", line 123, 
+in test_08_parameter_count
+    self.assertGreater(dec
+_params, 1_000_000, 
+"Decoder head has too few 
+parameters! (< 1M)")
+    ~~~~~~~~~~~~~~~~~~^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+AssertionError: 994808 
+not greater than 1000000 
+: Decoder head has too 
+few parameters! (< 1M)
+
+--------------------------
+--------------------------
+------------------
+Ran 12 tests in 4.320s
+
+FAILED (failures=1, 
+errors=1)
+
+=== Setting up TestHocVidComplete ===
+[HocVidComplete] Loading Core Pipeline...
+[HocVid] Initializing AFLB (fixed)...
+[HocVid] Initializing DDER (fixed)...
+[HocVid] Loading DDER weights from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  DDER weights loaded: 174 matched, 1 missing (expected: vit_proj), 0 unexpected
+[HocVid] Initializing Fusion Pipeline...
+
+[HocVid] Parameter Summary:
+  Total:       98,428,482 (98.43M)
+  Trainable:   10,579,266 (10.58M)
+  Frozen:      87,849,216 (87.85M)
+        AFLB:     36,167 trainable,          0 frozen
+        DDER:  6,712,345 trainable, 87,849,216 frozen
+      Fusion:  3,830,754 trainable,          0 frozen
+[HocVidComplete] Loading M2Restore Decoder Head...
+Model instantiated securely.
