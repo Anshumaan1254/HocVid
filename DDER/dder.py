@@ -31,6 +31,18 @@ class DDERModule(nn.Module):
             num_degradations=6
         )
         
+        # Learnable 1x1 projection: ViT-B/32 768-dim → 512-dim
+        # MUST be outside torch.no_grad() so gradients flow through it
+        self.feat_proj = nn.Conv2d(768, 512, kernel_size=1, bias=False)
+        # Initialize as truncation-equivalent: weight[i,i,0,0] = 1 for i=0..511
+        # This makes feat_proj behave like the old feats_map[:,:512] at init,
+        # so pretrained MoE weights work correctly without retraining.
+        # During fine-tuning, it gradually learns to use all 768 channels.
+        nn.init.zeros_(self.feat_proj.weight)
+        with torch.no_grad():
+            for i in range(512):
+                self.feat_proj.weight[i, i, 0, 0] = 1.0
+        
         # 2. Instantiate ViT-B-32 Architecture (Skeleton only, weights loaded later)
         vision_cfg = CLIPVisionCfg(layers=12, width=768, head_width=64, patch_size=32, image_size=224)
         text_cfg = CLIPTextCfg(context_length=77, vocab_size=49408, width=512, heads=8, layers=12)
@@ -50,12 +62,16 @@ class DDERModule(nn.Module):
         # 4. Spatial Projection for MoE Output
         self.proj_refinement = nn.Conv2d(512, 3, kernel_size=3, padding=1)
         
-    def forward(self, x, de_cls=None):
+    def forward(self, x, de_cls):
         B, C, H, W = x.shape
         device = x.device
         
-        if de_cls is None: 
-            de_cls = torch.zeros(B, 6).to(device)
+        if de_cls is None:
+            raise ValueError(
+                "de_cls is required — pass a (B, 6) degradation label vector. "
+                "DA-CLIP uses 6 universal degradation classes. "
+                "Map your dataset classes accordingly."
+            )
         
         with torch.no_grad():
             x_tokens = self.visual_backbone.conv1(x) 
@@ -79,9 +95,9 @@ class DDERModule(nn.Module):
             
             spatial_feats = x_tokens[:, 1:, :].permute(0, 2, 1) 
             feats_map = spatial_feats.reshape(B, 768, h_p, w_p)
-            
-            if feats_map.shape[1] != 512:
-                feats_map = feats_map[:, :512, :, :]
+
+        # Learnable 1x1 projection (OUTSIDE no_grad — gradients flow)
+        feats_map = self.feat_proj(feats_map)  # (B, 768, h, w) → (B, 512, h, w)
 
         prompt = self.text_prompt_emb.expand(B, -1)
         res_feat_map, r_loss = self.moe_router(feats_map, prompt, de_cls)

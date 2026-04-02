@@ -314,8 +314,8 @@ def run_inference(input_path, output_path):
 
 # ===================== RUN =====================
 if __name__ == "__main__":
-    input_path = r"c:\Users\Anshu\OneDrive\Desktop\HoCVid\evoIR_aflb\input_horse.png"
-    output_path = r"c:\Users\Anshu\OneDrive\Desktop\HoCVid\evoIR_aflb\output_restored.png"
+    input_path = r"c:\Users\Anshu\OneDrive\Desktop\HoCVid\evoIR_aflb\Horse1.png"
+    output_path = r"c:\Users\Anshu\OneDrive\Desktop\HoCVid\evoIR_aflb\Horse1_output_restored.png"
     
     # Check if input exists
     if not os.path.exists(input_path):

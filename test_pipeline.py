@@ -1,15 +1,15 @@
 """
-test_pipeline.py — Shape Verification Test for HoCVid Fusion Pipeline
+test_pipeline.py -- Shape Verification Test for HoCVid Fusion Pipeline
 =======================================================================
 
 Runs a complete dummy forward pass through the entire pipeline and verifies:
-    1. AFLB outputs (B, 48, H, W) — with Bug 1 & 2 fixes
-    2. DDER forward_features outputs (B, 512, h_p, w_p) — with Bug 3 & 4 fixes
+    1. AFLB outputs (B, 48, H, W) -- with Bug 1 & 2 fixes
+    2. DDER forward_features outputs (B, 512, h_p, w_p) -- with Bug 3 & 4 fixes
     3. CrossFrequencyGate outputs (B, 512, H, W)
-    4. SPMAdapter outputs (B, 512, H, W) — zero at init
-    5. Full fusion pipeline outputs (B, 512, H, W) — MCDB-ready
+    4. SPMAdapter outputs (B, 512, H, W) -- zero at init
+    5. Full fusion pipeline outputs (B, 512, H, W) -- MCDB-ready
     6. No NaNs anywhere in the pipeline
-    7. SPMAdapter zero-init verification (output ≡ 0 at step 0)
+    7. SPMAdapter zero-init verification (output = 0 at step 0)
     8. Gradient flow through trainable components
     9. Frozen backbone has no gradients
 
@@ -35,7 +35,7 @@ if _daclip_dir not in sys.path:
 def test_aflb_fixed():
     """Test AFLBFixed module with both bug fixes."""
     print("\n" + "=" * 60)
-    print("TEST 1: AFLBFixed — Bug 1 (.real) + Bug 2 (mask)")
+    print("TEST 1: AFLBFixed -- Bug 1 (.real) + Bug 2 (mask)")
     print("=" * 60)
 
     from aflb_fixed import AFLBFixed
@@ -54,7 +54,7 @@ def test_aflb_fixed():
     print(f"  Output:         {freq_feat.shape}")
     assert freq_feat.shape == (B, 48, H, W), f"Shape mismatch: {freq_feat.shape}"
     assert not torch.isnan(freq_feat).any(), "NaN detected in AFLB output!"
-    print("  ✓ Normal image shape correct")
+    print("  [OK] Normal image shape correct")
 
     # Test Bug 2 fix: small image (< 128px) should NOT produce empty mask
     H_small, W_small = 64, 64
@@ -67,28 +67,28 @@ def test_aflb_fixed():
     assert freq_small.shape == (B, 48, H_small, W_small)
     assert not torch.isnan(freq_small).any(), "NaN in small image output!"
     # Verify the output is not trivially zero (which would indicate empty mask bug)
-    assert freq_small.abs().mean() > 1e-6, "AFLB output is near-zero — mask bug may persist!"
-    print("  ✓ Small image (Bug 2 fix) verified")
+    assert freq_small.abs().mean() > 1e-6, "AFLB output is near-zero -- mask bug may persist!"
+    print("  [OK] Small image (Bug 2 fix) verified")
 
     # Test Bug 1 fix: output should not have systematic positive bias
     # With .real, output should have roughly zero mean. With abs(), mean > 0.
     high, low = aflb.fft(x)  # fft() internally calls conv1
     h_mean = high.mean().item()
-    print(f"  High-freq mean: {h_mean:.6f} (should be ≈0 with .real fix)")
+    print(f"  High-freq mean: {h_mean:.6f} (should be ~0 with .real fix)")
     # abs() would give mean >> 0; .real should be near zero
     assert abs(h_mean) < 1.0, f"High-freq mean too large ({h_mean}), abs() bug may persist"
-    print("  ✓ No positive bias (Bug 1 fix) verified")
+    print("  [OK] No positive bias (Bug 1 fix) verified")
 
     params = sum(p.numel() for p in aflb.parameters())
     print(f"  Parameters: {params:,} ({params / 1e6:.2f}M)")
-    print("  ✓ TEST 1 PASSED")
+    print("  [OK] TEST 1 PASSED")
     return True
 
 
 def test_dder_fixed():
-    """Test DDERFixedModule with Bug 3 (vit_proj) and Bug 4 (forward_features)."""
+    """Test DDERFixedModule with Bug 3 (feat_proj) and Bug 4 (forward_features)."""
     print("\n" + "=" * 60)
-    print("TEST 2: DDERFixedModule — Bug 3 (vit_proj) + Bug 4 (forward_features)")
+    print("TEST 2: DDERFixedModule -- Bug 3 (feat_proj) + Bug 4 (forward_features)")
     print("=" * 60)
 
     from dder_fixed import DDERFixedModule
@@ -113,13 +113,13 @@ def test_dder_fixed():
     assert feat.shape[0] == B, f"Batch mismatch: {feat.shape[0]} vs {B}"
     assert feat.shape[1] == 512, f"Channel mismatch: {feat.shape[1]} vs 512 (Bug 3 fix failed)"
     assert not torch.isnan(feat).any(), "NaN in DDER features!"
-    print("  ✓ forward_features returns (B, 512, h_p, w_p)")
+    print("  [OK] forward_features returns (B, 512, h_p, w_p)")
 
-    # Verify Bug 3: vit_proj exists and is a Conv2d(768, 512, 1)
-    assert hasattr(dder, 'vit_proj'), "vit_proj not found (Bug 3 fix missing)"
-    assert dder.vit_proj.in_channels == 768, f"vit_proj input: {dder.vit_proj.in_channels}"
-    assert dder.vit_proj.out_channels == 512, f"vit_proj output: {dder.vit_proj.out_channels}"
-    print("  ✓ vit_proj = Conv2d(768→512) exists")
+    # Verify Bug 3: feat_proj exists and is a Conv2d(768, 512, 1)
+    assert hasattr(dder, 'feat_proj'), "feat_proj not found (Bug 3 fix missing)"
+    assert dder.feat_proj.in_channels == 768, f"feat_proj input: {dder.feat_proj.in_channels}"
+    assert dder.feat_proj.out_channels == 512, f"feat_proj output: {dder.feat_proj.out_channels}"
+    print("  [OK] feat_proj = Conv2d(768->512) exists")
 
     # Verify backward compat: forward() still returns pixel-space
     dder.eval()
@@ -128,13 +128,13 @@ def test_dder_fixed():
     if isinstance(pixel_out, tuple):
         pixel_out = pixel_out[0]
     assert pixel_out.shape == (B, 3, H, W), f"forward() shape: {pixel_out.shape}"
-    print("  ✓ forward() still returns (B, 3, H, W) pixels")
+    print("  [OK] forward() still returns (B, 3, H, W) pixels")
 
     params = sum(p.numel() for p in dder.parameters())
-    vit_proj_params = sum(p.numel() for p in dder.vit_proj.parameters())
+    feat_proj_params = sum(p.numel() for p in dder.feat_proj.parameters())
     print(f"  Total params:   {params:,} ({params / 1e6:.2f}M)")
-    print(f"  vit_proj params: {vit_proj_params:,} ({vit_proj_params / 1e6:.2f}M)")
-    print("  ✓ TEST 2 PASSED")
+    print(f"  feat_proj params: {feat_proj_params:,} ({feat_proj_params / 1e6:.2f}M)")
+    print("  [OK] TEST 2 PASSED")
     return True
 
 
@@ -164,14 +164,14 @@ def test_cross_frequency_gate():
 
     params = sum(p.numel() for p in gate.parameters())
     print(f"  Parameters:  {params:,} ({params / 1e6:.2f}M)")
-    print("  ✓ TEST 3 PASSED")
+    print("  [OK] TEST 3 PASSED")
     return True
 
 
 def test_spm_adapter():
     """Test SPMAdapter module with zero-init verification."""
     print("\n" + "=" * 60)
-    print("TEST 4: SPMAdapter — Zero-init verification")
+    print("TEST 4: SPMAdapter -- Zero-init verification")
     print("=" * 60)
 
     from fusion import SPMAdapter
@@ -196,18 +196,18 @@ def test_spm_adapter():
     max_val = out.abs().max().item()
     print(f"  Max |output|: {max_val:.10f} (should be 0.0)")
     assert max_val == 0.0, f"SPMAdapter output not zero at init: max={max_val}"
-    print("  ✓ Zero-init verified (ControlNet trick working)")
+    print("  [OK] Zero-init verified (ControlNet trick working)")
 
     params = sum(p.numel() for p in adapter.parameters())
     print(f"  Parameters:  {params:,} ({params / 1e6:.2f}M)")
-    print("  ✓ TEST 4 PASSED")
+    print("  [OK] TEST 4 PASSED")
     return True
 
 
 def test_fusion_pipeline():
     """Test complete HocVidFusionPipeline."""
     print("\n" + "=" * 60)
-    print("TEST 5: HocVidFusionPipeline — Full Integration")
+    print("TEST 5: HocVidFusionPipeline -- Full Integration")
     print("=" * 60)
 
     from fusion import HocVidFusionPipeline
@@ -240,15 +240,15 @@ def test_fusion_pipeline():
 
     assert mcdb_input.shape == (B, 512, H, W), f"Shape: {mcdb_input.shape}"
     assert not torch.isnan(mcdb_input).any(), "NaN in fusion pipeline output!"
-    print("  ✓ Output shape matches MCDB input requirement")
-    print("  ✓ TEST 5 PASSED")
+    print("  [OK] Output shape matches MCDB input requirement")
+    print("  [OK] TEST 5 PASSED")
     return True
 
 
 def test_full_model():
     """Test complete HocVidModel end-to-end."""
     print("\n" + "=" * 60)
-    print("TEST 6: HocVidModel — Complete End-to-End")
+    print("TEST 6: HocVidModel -- Complete End-to-End")
     print("=" * 60)
 
     from model import HocVidModel
@@ -267,7 +267,7 @@ def test_full_model():
     sam_bnd = torch.rand(B, 1, H, W, device=device)
     midas_dep = torch.rand(B, 1, H, W, device=device)
 
-    # ── Inference test ──
+    # -- Inference test --
     model.eval()
     with torch.no_grad():
         mcdb_input, r_loss = model(raw_input, de_cls, sam_bnd, midas_dep)
@@ -278,9 +278,9 @@ def test_full_model():
 
     assert mcdb_input.shape == (B, 512, H, W), f"Shape: {mcdb_input.shape}"
     assert not torch.isnan(mcdb_input).any(), "NaN in model output!"
-    print("  ✓ End-to-end shape correct: (B, 512, H, W)")
+    print("  [OK] End-to-end shape correct: (B, 512, H, W)")
 
-    # ── Gradient flow test ──
+    # -- Gradient flow test --
     print("\n  Gradient flow test...")
     model.train()
     raw_input_grad = torch.randn(B, 3, H, W, device=device, requires_grad=False)
@@ -309,18 +309,18 @@ def test_full_model():
             frozen_with_grad += 1
     print(f"  Frozen params with gradient:       {frozen_with_grad} (should be 0)")
     assert frozen_with_grad == 0, "Gradient leaked to frozen params!"
-    print("  ✓ Gradient flow verified")
+    print("  [OK] Gradient flow verified")
 
-    # ── Test without SAM/MiDaS (graceful degradation) ──
+    # -- Test without SAM/MiDaS (graceful degradation) --
     model.eval()
     with torch.no_grad():
         mcdb_no_priors, _ = model(raw_input, de_cls)  # No SAM/MiDaS
 
     assert mcdb_no_priors.shape == (B, 512, H, W)
     assert not torch.isnan(mcdb_no_priors).any()
-    print("  ✓ Graceful degradation without SAM/MiDaS")
+    print("  [OK] Graceful degradation without SAM/MiDaS")
 
-    print("  ✓ TEST 6 PASSED")
+    print("  [OK] TEST 6 PASSED")
     return True
 
 
@@ -347,15 +347,15 @@ def main():
     print("=" * 60)
     all_passed = True
     for name, passed in results.items():
-        status = "✓ PASSED" if passed else "✗ FAILED"
+        status = "[OK] PASSED" if passed else "[FAIL] FAILED"
         print(f"  {name:.<40} {status}")
         if not passed:
             all_passed = False
 
     if all_passed:
-        print("\n✅ ALL TESTS PASSED — Pipeline produces (B, 512, H, W) with no NaNs!")
+        print("\n[OK] ALL TESTS PASSED -- Pipeline produces (B, 512, H, W) with no NaNs!")
     else:
-        print("\n❌ SOME TESTS FAILED")
+        print("\n[FAIL] SOME TESTS FAILED")
 
     return all_passed
 

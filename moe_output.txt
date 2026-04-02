@@ -1,0 +1,51 @@
+﻿python : C:\Users\Anshu\
+AppData\Local\Python\pyt
+honcore-3.14-64\Lib\site
+-packages\timm\models\la
+yers\__init__.py:49: 
+FutureWarning: 
+Importing from 
+timm.models.layers is 
+deprecated, please 
+import via timm.layers
+At line:1 char:1
++ python 
+extract_dder_feats.py 
+2>&1 | Out-File 
+-FilePath 
+C:\Users\Anshu ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified: 
+(C    
+:\Users\Anshu\...via    
+ timm.layers:String) [  
+  ], RemoteException
+    + 
+FullyQualifiedError    
+Id : NativeCommandErr   
+ or
+ 
+  warnings.warn(f"Import
+ing from {__name__} is 
+deprecated, please 
+import via 
+timm.layers", 
+FutureWarning)
+Processing Horse1 (degradation class=0)...
+[load_dder_checkpoint] Loaded from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  Matched:        174 / 175 parameters
+  Missing (new):  1 ù kept at random init
+    feat_proj.weight: [512, 768, 1, 1]
+  MoE router output: torch.Size([1, 512, 4, 6])
+  Saved C:\Users\Anshu\OneDrive\Desktop\HoCVid\Horse1_dder_output.png
+  Heatmap stats: min=0.0000, max=1.0000, mean=0.5478, std=0.2211
+Processing bacha (degradation class=3)...
+[load_dder_checkpoint] Loaded from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  Matched:        174 / 175 parameters
+  Missing (new):  1 ù kept at random init
+    feat_proj.weight: [512, 768, 1, 1]
+  MoE router output: torch.Size([1, 512, 16, 15])
+  Saved C:\Users\Anshu\OneDrive\Desktop\HoCVid\bacha_dder_output.png
+  Heatmap stats: min=0.0000, max=1.0000, mean=0.2446, std=0.1886

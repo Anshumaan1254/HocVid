@@ -1,18 +1,88 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 # Import the frozen upstream model exactly as requested
 from model import HocVidModel
 # Import our new bridged M2Restore decoder
 from m2restore_decoder import M2RestoreDecoder
 
+# --- SSIM Loss Integration ---
+try:
+    from pytorch_msssim import ssim as ssim_fn, SSIM
+    _SSIM_AVAILABLE = True
+except ImportError:
+    _SSIM_AVAILABLE = False
+    print("[HocVidComplete] WARNING: pytorch_msssim not installed.")
+    print("  Install with: python -m pip install pytorch-msssim")
+    print("  Falling back to L1-only loss.")
+
+
+class CombinedRestorationLoss(nn.Module):
+    """
+    Combined L1 + SSIM loss for image restoration.
+
+    L1 loss: pixel-level accuracy (reduces PSNR metric)
+    SSIM loss: structural similarity (reduces perceptual blur)
+    MoE balance loss: prevents expert collapse in router
+
+    Formula: alpha*L1 + (1-alpha)*(1-SSIM) + beta*router_loss
+    alpha=0.84 from Restormer/M2Restore paper.
+    """
+    def __init__(self, alpha=0.84, beta=0.01):
+        super().__init__()
+        self.alpha = alpha
+        self.beta  = beta
+        if _SSIM_AVAILABLE:
+            self.ssim = SSIM(
+                data_range=1.0,
+                size_average=True,
+                channel=3,
+                nonnegative_ssim=True
+            )
+        self.use_ssim = _SSIM_AVAILABLE
+
+    def forward(self, pred, target, router_loss=None):
+        """
+        Args:
+            pred:        (B, 3, H, W) -- restored image, [0,1]
+            target:      (B, 3, H, W) -- clean ground truth, [0,1]
+            router_loss: scalar or None -- MoE balance loss
+        Returns:
+            total_loss, loss_dict (for logging)
+        """
+        l1 = F.l1_loss(pred, target)
+
+        if self.use_ssim:
+            ssim_val  = self.ssim(pred, target)
+            ssim_loss = 1.0 - ssim_val
+            pixel_loss = self.alpha * l1 + (1.0 - self.alpha) * ssim_loss
+        else:
+            ssim_val  = torch.tensor(0.0)
+            ssim_loss = torch.tensor(0.0)
+            pixel_loss = l1
+
+        if router_loss is not None:
+            total = pixel_loss + self.beta * router_loss
+        else:
+            total = pixel_loss
+
+        loss_dict = {
+            'total':   total.item(),
+            'l1':      l1.item(),
+            'ssim':    ssim_val.item() if self.use_ssim else 0.0,
+            'pixel':   pixel_loss.item(),
+            'router':  router_loss.item() if router_loss is not None else 0.0,
+        }
+        return total, loss_dict
+
 class HocVidComplete(nn.Module):
     """
-    Complete HoCVid: Degraded RGB (B,3,H,W) → Restored RGB (B,3,H,W)
+    Complete HoCVid: Degraded RGB (B,3,H,W) -> Restored RGB (B,3,H,W)
     
     Architecture:
-        1. HocVidModel (Upstream) → (B, 512, H, W) structural prior map + aux MoE loss
-        2. M2RestoreDecoder (Trainable head) → (B, 3, H, W) learned degradation offset
+        1. HocVidModel (Upstream) -> (B, 512, H, W) structural prior map + aux MoE loss
+        2. M2RestoreDecoder (Trainable head) -> (B, 3, H, W) learned degradation offset
         3. Global residual: restored_output = decoder_output + degraded_input
     
     Training stages managed internally:
@@ -38,7 +108,7 @@ class HocVidComplete(nn.Module):
     ):
         super().__init__()
         
-        # ── 1. HoCVid Core Pipeline (Input -> 512 Channels) ──
+        # == 1. HoCVid Core Pipeline (Input -> 512 Channels) ==
         print("[HocVidComplete] Loading Core Pipeline...")
         self.upstream_model = HocVidModel(
             dder_weights_path=dder_weights_path,
@@ -48,7 +118,7 @@ class HocVidComplete(nn.Module):
             use_midas=use_midas
         )
 
-        # ── 2. M2Restore Decoder (512 Channels -> RGB) ──
+        # == 2. M2Restore Decoder (512 Channels -> RGB) ==
         print("[HocVidComplete] Loading M2Restore Decoder Head...")
         self.decoder_head = M2RestoreDecoder(
             in_dim=512, 
@@ -57,6 +127,9 @@ class HocVidComplete(nn.Module):
             num_blocks=4,         # Standard M2Restore level block size
             num_refinement_blocks=4
         )
+
+        # == 3. Combined Restoration Loss ==
+        self.loss_fn = CombinedRestorationLoss(alpha=0.84, beta=0.01)
         
         # Start strictly frozen 
         self.freeze_upstream()
@@ -101,9 +174,9 @@ class HocVidComplete(nn.Module):
             
         return restored_clamped
 
-    # ══════════════════════════════════════════════════════════════
+    # ==============================================================
     # Freeze States and Parameter Logic 
-    # ══════════════════════════════════════════════════════════════
+    # ==============================================================
 
     def freeze_upstream(self):
         """Stage 1: Frozen backbone mode (train only head and adapters)"""
@@ -125,8 +198,8 @@ class HocVidComplete(nn.Module):
         for param in self.upstream_model.dder.moe_router.parameters():
             param.requires_grad = True
         
-        # Also ensure vit_proj learns appropriate embeddings
-        for param in self.upstream_model.dder.vit_proj.parameters():
+        # Also ensure feat_proj learns appropriate embeddings
+        for param in self.upstream_model.dder.feat_proj.parameters():
             param.requires_grad = True
 
     def unfreeze_stage3(self):

@@ -362,8 +362,8 @@ def pad_to_multiple(img, multiple=16):
         img = F.pad(img, (0, pad_w, 0, pad_h), mode='reflect')
     return img, h, w
 
-input_path = os.path.join(os.path.dirname(__file__), 'test2.png')
-output_path = os.path.join(os.path.dirname(__file__), 'test2output.png')
+input_path = os.path.join(os.path.dirname(__file__), 'Horse1.png')
+output_path = os.path.join(os.path.dirname(__file__), 'Horse1_output.png')
 
 img = Image.open(input_path).convert('RGB')
 orig_w, orig_h = img.size
@@ -407,7 +407,7 @@ out_pil.save(output_path, quality=95)
 print(f"Output saved: {output_path}")
 
 # Side-by-side comparison
-comp_path = os.path.join(os.path.dirname(__file__), 'test2output_comparison.png')
+comp_path = os.path.join(os.path.dirname(__file__), 'Horse1_output_comparison.png')
 comp_w = orig_w * 2 + 20; comp_h = orig_h + 50
 comp = Image.new('RGB', (comp_w, comp_h), (30, 30, 30))
 comp.paste(img, (0, 50)); comp.paste(out_pil, (orig_w + 20, 50))

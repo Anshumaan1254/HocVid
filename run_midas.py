@@ -9,11 +9,16 @@ from transformers import DPTImageProcessor, DPTForDepthEstimation
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 
-# 1. Load image
-img_path = os.path.join('evoIR_aflb', 'bacha.png')
+# 1. Load image -- search common locations
+img_path = 'bacha.png'
 if not os.path.exists(img_path):
-    print(f"Error: {img_path} not found.")
-    sys.exit(1)
+    for candidate in ['evoIR_aflb/bacha.png', 'input/bacha.png']:
+        if os.path.exists(candidate):
+            img_path = candidate
+            break
+    else:
+        print(f"Error: bacha.png not found in any expected location.")
+        sys.exit(1)
 
 image = Image.open(img_path).convert('RGB')
 print(f"Loaded image: {image.size}")
@@ -31,7 +36,7 @@ print(f"Loading model {MODEL_NAME}...")
 model = DPTForDepthEstimation.from_pretrained(MODEL_NAME, low_cpu_mem_usage=True)
 model = model.to(device)
 model.eval()
-print("✅ MiDaS model loaded successfully!")
+print("MiDaS model loaded successfully!")
 
 # 3. Process image and run inference
 print("Running MiDaS forward pass...")
@@ -43,7 +48,6 @@ with torch.no_grad():
 
 # 4. Interpolate to original size and prepare for visualization
 print("Processing output...")
-# interpolate to original size
 prediction = torch.nn.functional.interpolate(
     predicted_depth.unsqueeze(1),
     size=image.size[::-1],
@@ -51,9 +55,10 @@ prediction = torch.nn.functional.interpolate(
     align_corners=False,
 )
 
-# Convert to numpy array and normalize
+# Convert to numpy array and normalize with full min-max range
 output = prediction.squeeze().cpu().numpy()
-formatted = (output * 255 / np.max(output)).astype("uint8")
+output_norm = (output - output.min()) / (output.max() - output.min() + 1e-8)
+formatted = (output_norm * 255).astype("uint8")
 
 # 5. Plot and save
 plt.figure(figsize=(10, 5))
@@ -64,8 +69,8 @@ plt.title('Original Image')
 plt.axis('off')
 
 plt.subplot(1, 2, 2)
-# MiDaS convention is often inverted or magma colormap
-plt.imshow(formatted, cmap='magma')
+im = plt.imshow(formatted, cmap='inferno')
+plt.colorbar(im, label='Depth (relative)')
 plt.title('MiDaS Depth Map')
 plt.axis('off')
 
@@ -73,10 +78,3 @@ plt.tight_layout()
 out_path = 'midas_depth_bacha.png'
 plt.savefig(out_path, dpi=150, bbox_inches='tight')
 print(f"Saved visualization to {out_path}")
-
-# Copy to conversation artifacts
-import shutil
-artifact_dir = r"C:\Users\Anshu\.gemini\antigravity\brain\b83df88f-ee52-4609-b66f-6a7d4e6c6575"
-os.makedirs(artifact_dir, exist_ok=True)
-shutil.copy(out_path, os.path.join(artifact_dir, 'midas_depth_bacha.png'))
-print("Copied to artifacts dir.")

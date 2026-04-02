@@ -1,13 +1,13 @@
 """
-aflb_fixed.py — Fixed AFLB Module for HoCVid Fusion Pipeline
+aflb_fixed.py -- Fixed AFLB Module for HoCVid Fusion Pipeline
 ==============================================================
 
 This module provides AFLBFixed, a standalone AFLB class with bug fixes
 from the HoCVid chat summary applied. The original notebook aflb.ipynb
 is NOT modified.
 
-Bug 1 — torch.abs() tinting:
-    Original: high = torch.abs(high) — breaks conjugate symmetry. When you
+Bug 1 -- torch.abs() tinting:
+    Original: abs() on complex IFFT result -- breaks conjugate symmetry. When you
     take abs() of a complex IFFT result, you discard sign information and
     fold negative lobes into positive, causing systematic positive bias
     (= color tinting, especially yellow/green shift).
@@ -17,7 +17,7 @@ Bug 1 — torch.abs() tinting:
     real values with negligible imaginary part (~1e-7 from float rounding).
     .real discards this rounding noise correctly; abs() does not.
 
-Bug 2 — Empty mask for images < 128px:
+Bug 2 -- Empty mask for images < 128px:
     Original: h_ = (h // n * threshold[i, 0, :, :]).int() where n=128.
     When h < 128, h // 128 = 0, so h_ = 0 for ALL thresholds, producing
     an all-zero mask. This means low = 0 and high = entire spectrum,
@@ -29,7 +29,7 @@ Bug 2 — Empty mask for images < 128px:
 Note on FFT norm: norm='ortho' is kept here. The chat summary confirms
 norm='forward' for the pretrained model's internal FFT but the AFLB
 notebook uses norm='ortho' for its own frequency decomposition. These
-are two different FFT call sites — the AFLB.fft() decomposition is
+are two different FFT call sites -- the AFLB.fft() decomposition is
 separate from the pretrained AdaIR model's internal DFFN/FSAS blocks.
 """
 
@@ -39,12 +39,12 @@ import torch.nn.functional as F
 from einops import rearrange
 
 
-# ─────────────────────────────────────────────────────────────────────
+# =====================================================================
 # Supporting modules (copied from aflb notebook, unchanged)
-# ─────────────────────────────────────────────────────────────────────
+# =====================================================================
 
 class SpatialGate(nn.Module):
-    """H→L Unit: spatial attention from high-frequency features."""
+    """H->L Unit: spatial attention from high-frequency features."""
     def __init__(self):
         super().__init__()
         self.spatial = nn.Conv2d(2, 1, kernel_size=7, padding=3, bias=False)
@@ -58,7 +58,7 @@ class SpatialGate(nn.Module):
 
 
 class ChannelGate(nn.Module):
-    """L→H Unit: channel attention from low-frequency features."""
+    """L->H Unit: channel attention from low-frequency features."""
     def __init__(self, dim):
         super().__init__()
         self.avg = nn.AdaptiveAvgPool2d((1, 1))
@@ -121,21 +121,21 @@ class ChannelCrossAttention(nn.Module):
         return self.project_out(out)
 
 
-# ─────────────────────────────────────────────────────────────────────
+# =====================================================================
 # Fixed AFLB
-# ─────────────────────────────────────────────────────────────────────
+# =====================================================================
 
 class AFLBFixed(nn.Module):
     """
-    Adaptive Frequency Learning Block — FIXED version.
+    Adaptive Frequency Learning Block -- FIXED version.
 
     Produces (B, dim, H, W) frequency features from raw input images.
     Default dim=48 matches the pretrained AdaIR/EvoIR architecture.
 
     Pipeline:
-        1. conv1: project input (3ch) → dim channels
+        1. conv1: project input (3ch) -> dim channels
         2. fft(): adaptive frequency decomposition (FIXED)
-            - FFT → learned mask → separate high/low → IFFT (.real on BOTH)
+            - FFT -> learned mask -> separate high/low -> IFFT (.real on BOTH)
         3. Cross-attention: freq components attend to encoder features
         4. FreRefine (FMoM): bidirectional cross-frequency modulation
         5. Aggregation cross-attention + learnable residual
@@ -216,9 +216,9 @@ class AFLBFixed(nn.Module):
 
         # Build frequency mask per sample
         for i in range(mask.shape[0]):
-            # ── Bug 2 Fix: Safe mask construction ──
+            # == Bug 2 Fix: Safe mask construction ==
             # Original: h_ = (h // n * threshold[...]).int()
-            #   When h < n (128), h // n = 0, so h_ = 0 → empty mask!
+            #   When h < n (128), h // n = 0, so h_ = 0 -> empty mask!
             # Fixed: Scale threshold by half the spectrum dimension directly.
             #   max(1, ...) ensures at least a 1-pixel mask radius.
             h_ = max(1, int(h * threshold[i, 0, 0, 0].item() * 0.5))
@@ -241,8 +241,8 @@ class AFLBFixed(nn.Module):
         fft_high = fft * (1 - mask)
         high = self.unshift(fft_high)
         high = torch.fft.ifft2(high, norm='ortho', dim=(-2, -1))
-        # ── Bug 1 Fix: .real NOT torch.abs() ──
-        # torch.abs() breaks conjugate symmetry → positive bias → color tint.
+        # == Bug 1 Fix: .real NOT torch.abs() ==
+        # torch.abs() breaks conjugate symmetry -> positive bias -> color tint.
         # .real correctly discards negligible imaginary rounding noise.
         high = high.real
 
@@ -285,8 +285,8 @@ class AFLBFixed(nn.Module):
         For the fusion pipeline, we need AFLB's 48-channel frequency
         decomposition independently (there are no AdaIR encoder features
         to attend to). This method runs:
-            1. FFT decomposition → high, low
-            2. FreRefine (FMoM) → bidirectional gating
+            1. FFT decomposition -> high, low
+            2. FreRefine (FMoM) -> bidirectional gating
             3. Returns fused 48-channel features
 
         Args:

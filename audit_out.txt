@@ -1,0 +1,65 @@
+
+=== AUDIT: DDER/MOE_CLIPbias.py ===
+  [OK] Fix 1a -- exp removed: No .exp() found
+  [OK] Fix 1b -- log removed: No .log() return
+  [OK] Fix 1c -- eps removed: No eps guard
+  [OK] Fix 1d -- returns ensemble: Returns raw ensemble
+
+=== AUDIT: DDER/dder.py ===
+  [OK] Fix 2a -- feat_proj exists: feat_proj Conv2d found
+  [OK] Fix 2b -- identity diagonal: Identity diagonal correct
+  [OK] Fix 2c -- upper channels zero: Upper channels zero
+  [OK] Fix 2d -- feat_proj trainable: requires_grad=True
+  [OK] Fix 3 -- de_cls required: de_cls validation present
+
+=== AUDIT: dder_fixed.py ===
+  [OK] Fix 4 -- kaiming removed: No kaiming_normal_ in __init__
+
+=== AUDIT: aflb_fixed.py ===
+  [OK] Fix 5 -- .real on IFFT: .real used
+  [OK] Fix 6 -- fractional mask: Fractional mask sizing found
+
+=== AUDIT: extract_dder_feats.py ===
+  [OK] Fix 7 -- hooks moe_router: moe_router hook found
+  [OK] Fix 8 -- specific de_cls: Specific de_cls found
+
+=== AUDIT: net/M2Restore.py ===
+  [OK] Fix 11 -- mamba try/except: mamba fallback found
+  [OK] Fix 12 -- daclip path: Dynamic daclip path
+  [OK] Fix 13 -- dynamic checkpoint: Dynamic checkpoint search
+  [OK] Fix 14 -- register_buffer: register_buffer used
+  [OK] Fix 15a -- torch.sigmoid: No F.sigmoid
+  [OK] Fix 15b -- .real IFFT: No torch.abs on IFFT
+  [OK] Fix 15c -- fractional mask: Fractional mask found
+  [OK] Fix 15d -- tuple in MB: Tuple-based MB
+  [OK] Fix 15e -- autocast API: Updated autocast
+
+=== AUDIT: m2restore_decoder.py ===
+  [OK] Fix 16a -- VSSBlock: VSSBlock found
+  [OK] Fix 16b -- SelectiveScan2D: SelectiveScan2D found
+  [OK] Fix 16c -- mamba fallback: Mamba fallback chain
+  [OK] Fix 16d -- 4-dir scan: 4 directional SSMs
+  [OK] Fix 16e -- bridge zero-init: bridge_proj zeroed
+  [OK] Fix 16f -- encoder-decoder: Multi-scale structure
+  [OK] Fix 16g -- skip connection: Skip connection found
+[M2RestoreDecoder] SSM backend: pure PyTorch SSM fallback
+  [OK] Fix 16h -- param count: 17.35M params
+
+=== AUDIT: hocvid_complete.py ===
+  [OK] Fix 9 -- feat_proj name: No vit_proj references
+  [OK] Fix 17a -- CombinedRestorationLoss: CombinedRestorationLoss found
+  [OK] Fix 17b -- SSIM import: SSIM import found
+
+=== AUDIT: test_pipeline.py ===
+  [OK] Fix 10 -- no Unicode: No Unicode symbols
+
+=== AUDIT: train_dder_corrected.py ===
+  [OK] train_dder SSIM: SSIM in training loop
+
+==================================================
+AUDIT SUMMARY
+==================================================
+  36/36 checks passed
+  ALL CHECKS PASSED -- 17 fixes confirmed on disk
+C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\timm\models\layers\__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)

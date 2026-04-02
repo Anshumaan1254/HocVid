@@ -37,9 +37,13 @@ def main():
     print(f"====================================")
     print("Simulating a training step forward pass...")
     dummy_input = torch.randn(args.batch_size, 3, 224, 224) 
+    # Create a dummy one-hot de_cls for smoke test (B, 6) — DA-CLIP 6-class system
+    import torch.nn.functional as F_func
+    dummy_labels = torch.zeros(args.batch_size, dtype=torch.long)  # class 0
+    de_cls = F_func.one_hot(dummy_labels, num_classes=6).float()
     
     model.train()
-    out, r_loss = model(dummy_input)
+    out, r_loss = model(dummy_input, de_cls=de_cls)
     print(f"Model output shape: {out.shape}")
     print(f"Router loss: {r_loss.item():.6f}")
     print(f"====================================")

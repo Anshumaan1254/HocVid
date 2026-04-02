@@ -18,13 +18,12 @@ class ES_EE(object):
         inp_exp = inp[self._batch_index].squeeze(1)
         return torch.split(inp_exp, self._part_sizes, dim=0)
     def ee(self, expert_out, multiply_by_gates=True):
-        stitched = torch.cat(expert_out, 0).exp()
+        stitched = torch.cat(expert_out, 0)
         if multiply_by_gates:
             stitched = stitched.mul(self._nonzero_gates)
         zeros = torch.zeros(self._gates.size(0), expert_out[-1].size(1), requires_grad=True, device=stitched.device)
         ensemble = zeros.index_add(0, self._batch_index, stitched.float())
-        ensemble[ensemble == 0] = np.finfo(float).eps
-        return ensemble.log()
+        return ensemble
     def expert_to_gates(self):
         return torch.split(self._nonzero_gates, self._part_sizes, dim=0)
 

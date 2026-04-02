@@ -1,0 +1,14 @@
+﻿============================================================
+UCDPSF.PKL INSPECTION
+============================================================
+Type: list
+Length: 9
+  [0]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.0922
+  [1]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.0967
+  [2]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.1015
+  [3]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.1064
+  [4]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.1115
+  [5]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.1072
+  [6]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.1031
+  [7]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.0992
+  [8]: ndarray shape=(800, 800, 3), dtype=float32, min=0.0000, max=0.0957

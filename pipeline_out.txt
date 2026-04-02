@@ -1,0 +1,138 @@
+[Setup] Device: cuda
+[Setup] Output folder: C:\Users\Anshu\OneDrive\Desktop\HoCVid\test_output_full
+
+[Load] Loading bacha.png...
+  Found at: C:\Users\Anshu\OneDrive\Desktop\HoCVid\evoIR_aflb\bacha.png
+  Image size: 1182x1206
+  [Saved] 00_original_bacha.png
+
+[1/9] Power Spectrum (FFT of input)...
+  [Saved] 01_power_spectrum.png
+
+[2-3/9] AFLB Frequency Maps (Low + High)...
+  AFLBFixed loaded (random init -- no pretrained weights needed)
+  [Saved] 02_aflb_low_frequency.png
+  [Saved] 03_aflb_high_frequency.png
+  [Saved] 03b_aflb_combined_freq.png
+
+[4/9] DDER MoE Router Feature Map...
+[load_dder_checkpoint] Loaded from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  Matched:        174 / 175 parameters
+  Missing (new):  1 � kept at random init
+    feat_proj.weight: [512, 768, 1, 1]
+  [Saved] 04_dder_moe_output.png
+  [Saved] 04b_dder_heatmap_only.png
+
+[5/9] net/M2Restore.py standalone output...
+  SKIPPED -- standalone M2Restore requires full daclip model load
+  (uses ~2GB VRAM for ViT + tokenizer). Use net/M2Restore.py directly.
+  [Saved] 05_m2restore_standalone.png
+
+[6/9] SAM-S Boundary Map...
+  [Saved] 06_sam_boundary.png
+  [Saved] 06b_edges_clean.png
+
+[7/9] MiDaS Depth Map...
+  MiDaS failed (FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\Anshu\\OneDrive\\Desktop\\HoCVid\\intel-isl/MiDaS\\hubconf.py')
+  Using Gaussian blur as depth proxy...
+  [Saved] 07_midas_depth.png
+
+[8/9] Fusion Pipeline Output (mcdb_input)...
+[HocVid] Initializing AFLB (fixed)...
+[HocVid] Initializing DDER (fixed)...
+[HocVid] Loading DDER weights from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+[load_dder_checkpoint] Loaded from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  Matched:        174 / 175 parameters
+  Missing (new):  1 � kept at random init
+    feat_proj.weight: [512, 768, 1, 1]
+[HocVid] Initializing Fusion Pipeline...
+
+[HocVid] Parameter Summary:
+  Total:       98,428,482 (98.43M)
+  Trainable:   10,579,266 (10.58M)
+  Frozen:      87,849,216 (87.85M)
+        AFLB:     36,167 trainable,          0 frozen
+        DDER:  6,712,345 trainable, 87,849,216 frozen
+      Fusion:  3,830,754 trainable,          0 frozen
+  Fusion failed: CUDA out of memory. Tried to allocate 2.72 GiB. GPU 0 has a total capacity of 7.96 GiB of which 0 bytes is free. Of the allocated memory 13.46 GiB is allocated by PyTorch, and 50.67 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  [Saved] 08_fusion_combined_output.png
+
+[9/9] M2RestoreDecoder output (untrained)...
+[M2RestoreDecoder] SSM backend: pure PyTorch SSM fallback
+  Using random mcdb_input (fusion failed)
+  [Saved] 09_m2restore_decoder_output.png
+  [Saved] 09b_final_restored.png
+  Residual max: 0.102699
+  Output vs input max diff: 27.0000
+  NOTE: ~identical because bridge_proj is zero-init (untrained)
+
+[Grid] Creating master comparison grid...
+  [Saved] 00_MASTER_GRID.png
+
+============================================================
+PIPELINE TEST COMPLETE
+============================================================
+Output folder: C:\Users\Anshu\OneDrive\Desktop\HoCVid\test_output_full
+
+Saved files:
+  00_MASTER_GRID.png                                  2507 KB
+  00_original_bacha.png                               1287 KB
+  01_power_spectrum.png                                 19 KB
+  02_aflb_low_frequency.png                           1524 KB
+  03_aflb_high_frequency.png                          1348 KB
+  03b_aflb_combined_freq.png                          1091 KB
+  04_dder_moe_output.png                              3678 KB
+  04b_dder_heatmap_only.png                            710 KB
+  05_m2restore_standalone.png                         1301 KB
+  06_sam_boundary.png                                 1163 KB
+  06b_edges_clean.png                                   65 KB
+  07_midas_depth.png                                  1205 KB
+  08_fusion_combined_output.png                         12 KB
+  09_m2restore_decoder_output.png                     4987 KB
+  09b_final_restored.png                              1471 KB
+
+NOTE: 09_m2restore_decoder_output.png shows ~identical
+      input/output because the decoder is not yet trained
+      (bridge_proj = zero-init). Train on AllWeather to
+      see actual restoration.
+============================================================
+
+---STDERR---
+Traceback (most recent call last):
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\test_full_pipeline.py", line 363, in <module>
+    mcdb_input, router_loss = hocvid(
+                              ~~~~~~^
+        img_tensor,
+        ^^^^^^^^^^^
+    ...<2 lines>...
+        midas_depth=midas_dummy
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\model.py", line 224, in forward
+    mcdb_input = self.fusion(
+        aflb_features=aflb_features,
+    ...<4 lines>...
+        target_w=W,
+    )
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\fusion.py", line 317, in forward
+    gated_fused = self.cross_freq_gate(aflb_aligned, dder_aligned)  # (B, 512, H, W)
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Anshu\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\Anshu\OneDrive\Desktop\HoCVid\fusion.py", line 140, in forward
+    fused = self.fuse_proj(aflb_gated + dder_gated)  # (B, 512, H, W)
+                           ~~~~~~~~~~~^~~~~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.72 GiB. GPU 0 has a total capacity of 7.96 GiB of which 0 bytes is free. Of the allocated memory 13.46 GiB is allocated by PyTorch, and 50.67 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

@@ -1,0 +1,48 @@
+﻿python : C:\Users\Ansh
+u\AppData\Local\Python
+\pythoncore-3.14-64\Li
+b\site-packages\timm\m
+odels\layers\__init__.
+py:49: FutureWarning: 
+Importing from 
+timm.models.layers is 
+deprecated, please 
+import via timm.layers
+At line:1 char:1
++ python 
+extract_dder_feats.py 
+2>&1 | Out-File 
+-FilePath 
+C:\Users\Anshu ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo    
+          : 
+NotSpecified: (C    
+:\Users\Anshu\...via  
+   
+timm.layers:String) [ 
+   ], RemoteException
+    + 
+FullyQualifiedError   
+ Id : 
+NativeCommandErr    or
+ 
+  warnings.warn(f"Impo
+rting from {__name__} 
+is deprecated, please 
+import via 
+timm.layers", 
+FutureWarning)
+Processing Horse1...
+[load_dder_checkpoint] Loaded from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  Matched:        174 / 175 parameters
+  Missing (new):  1 ù kept at random init
+    feat_proj.weight: [512, 768, 1, 1]
+Saved C:\Users\Anshu\OneDrive\Desktop\HoCVid\Horse1_dder_output.png
+Processing bacha...
+[load_dder_checkpoint] Loaded from: C:\Users\Anshu\OneDrive\Desktop\HoCVid\DDER\dder.pt
+  Matched:        174 / 175 parameters
+  Missing (new):  1 ù kept at random init
+    feat_proj.weight: [512, 768, 1, 1]
+Saved C:\Users\Anshu\OneDrive\Desktop\HoCVid\bacha_dder_output.png

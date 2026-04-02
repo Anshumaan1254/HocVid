@@ -1,0 +1,57 @@
+﻿python : C:\Users\Anshu\Ap
+pData\Local\Python\pythonc
+ore-3.14-64\Lib\site-packa
+ges\timm\models\layers\__i
+nit__.py:49: 
+FutureWarning: Importing 
+from timm.models.layers 
+is deprecated, please 
+import via timm.layers
+At line:1 char:1
++ python train.py 2>&1 | 
+Out-File -FilePath C:\User
+s\Anshu\OneDrive\Des ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (C  
+  :\Users\Anshu\...via    
+ timm.layers:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  
+warnings.warn(f"Importing 
+from {__name__} is 
+deprecated, please import 
+via timm.layers", 
+FutureWarning)
+====================================
+Initializing HocVid model with AFLB + DDER...
+[HocVid] Initializing AFLB (fixed)...
+[HocVid] Initializing DDER (fixed)...
+[HocVid] Loading DDER weights from: DDER/dder.pt
+[load_dder_checkpoint] Loaded from: DDER/dder.pt
+  Matched:        174 / 176 parameters
+  Missing (new):  2 ù kept at random init
+    feat_proj.weight: [512, 768, 1, 1]
+    feat_proj.bias: [512]
+[HocVid] Initializing Fusion Pipeline...
+
+[HocVid] Parameter Summary:
+  Total:       98,428,994 (98.43M)
+  Trainable:   10,579,778 (10.58M)
+  Frozen:      87,849,216 (87.85M)
+        AFLB:     36,167 trainable,          0 frozen
+        DDER:  6,712,857 trainable, 87,849,216 frozen
+      Fusion:  3,830,754 trainable,          0 frozen
+DDER Parameters: 152 frozen out of 173 total.
+WARNING: Not all DDER parameters are frozen!
+AFLB Parameters: 0 frozen out of 30 total.
+Trainable: 10,579,778 / Total: 98,428,994
+====================================
+Simulating a training step forward pass...
+Model output shape: torch.Size([1, 512, 224, 224])
+Router loss: 1.429159
+====================================

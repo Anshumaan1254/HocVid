@@ -20,7 +20,7 @@ Freeze/Unfreeze policy:
 
     TRAINABLE (gradients flow):
         - AFLB FreModule (AFLBFixed) — ~0.15M params
-        - DDER vit_proj (1×1 conv 768→512) — ~0.39M params
+        - DDER feat_proj (1×1 conv 768→512) — ~0.39M params
         - DDER MoE router — existing params
         - CrossFrequencyGate — ~0.32M params
         - SPMAdapter — ~0.63M params
@@ -44,7 +44,7 @@ if _daclip_dir not in sys.path:
     sys.path.insert(0, _daclip_dir)
 
 from aflb_fixed import AFLBFixed
-from dder_fixed import DDERFixedModule
+from dder_fixed import DDERFixedModule, load_dder_checkpoint
 from fusion import HocVidFusionPipeline
 
 
@@ -103,22 +103,13 @@ class HocVidModel(nn.Module):
         print("[HocVid] Initializing DDER (fixed)...")
         self.dder = DDERFixedModule(num_experts=num_experts)
 
-        # Load DDER pretrained weights
+        # Load DDER pretrained weights (smart loader handles mismatches)
         if dder_weights_path is None:
             dder_weights_path = os.path.join(_dder_dir, 'dder.pt')
 
         if os.path.exists(dder_weights_path):
             print(f"[HocVid] Loading DDER weights from: {dder_weights_path}")
-            state_dict = torch.load(dder_weights_path, map_location='cpu', weights_only=False)
-            if isinstance(state_dict, dict) and 'model_state_dict' in state_dict:
-                state_dict = state_dict['model_state_dict']
-            elif isinstance(state_dict, dict) and 'state_dict' in state_dict:
-                state_dict = state_dict['state_dict']
-            result = self.dder.load_state_dict(state_dict, strict=False)
-            matched = len(state_dict) - len(result.unexpected_keys)
-            print(f"  DDER weights loaded: {matched} matched, "
-                  f"{len(result.missing_keys)} missing (expected: vit_proj), "
-                  f"{len(result.unexpected_keys)} unexpected")
+            load_dder_checkpoint(self.dder, dder_weights_path, verbose=True)
         else:
             print(f"[HocVid] WARNING: DDER weights not found at {dder_weights_path}")
 
@@ -139,7 +130,7 @@ class HocVidModel(nn.Module):
     def _freeze_dder_backbone(self):
         """
         Freeze DDER's ViT backbone. Keep trainable:
-            - self.dder.vit_proj (1×1 conv 768→512)
+            - self.dder.feat_proj (1×1 conv 768→512)
             - self.dder.moe_router (MoE expert routing)
             - self.dder.proj_refinement (pixel projection, used by forward())
         """
@@ -149,8 +140,8 @@ class HocVidModel(nn.Module):
 
         # text_prompt_emb is a buffer (not a parameter), already frozen
 
-        # vit_proj is trainable (freshly initialized, not pretrained)
-        for param in self.dder.vit_proj.parameters():
+        # feat_proj is trainable (freshly initialized, not pretrained)
+        for param in self.dder.feat_proj.parameters():
             param.requires_grad = True
 
         # MoE router is trainable
@@ -201,6 +192,8 @@ class HocVidModel(nn.Module):
         Args:
             raw_input:    (B, 3, H, W)  — degraded input frame, [0, 1] range
             de_cls:       (B, 6) or None — degradation class vector for MoE
+                          (DA-CLIP uses 6 universal degradation classes)
+                          If None during inference, uses uniform distribution.
             sam_boundary: (B, 1, H, W) or None — SAM-S boundary map
             midas_depth:  (B, 1, H, W) or None — MiDaS depth map
 
@@ -216,7 +209,7 @@ class HocVidModel(nn.Module):
         aflb_features = self.aflb.forward_features(raw_input)  # (B, 48, H', W')
 
         # ── 2. DDER: Extract degradation features ──
-        # ViT backbone is frozen, but vit_proj and MoE router are trainable
+        # ViT backbone is frozen, but feat_proj and MoE router are trainable
         dder_feat, r_loss = self.dder.forward_features(raw_input, de_cls)  # (B, 512, h_p, w_p)
 
         # ── 3. Structural priors (frozen) ──
